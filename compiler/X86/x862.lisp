@@ -628,6 +628,9 @@
     0 
     (min (- (ash ea (- *x862-target-node-shift*)) count) #xff)))
 
+;; FIXME parametrize as appropriate
+;; must be in sync with set-nth-immediate
+(defconstant +function-immediate-constants-are-counted-from+ 1)
 
 (defun x862-compile (afunc &optional lambda-form *x862-record-symbols*)
   (progn
@@ -781,6 +784,19 @@
              (progn
                (setq bits (x862-toplevel-form vinsns (make-wired-lreg *x862-result-reg*)
                                               $backend-return (afunc-acode afunc)))
+
+               ;; budden
+               ;; It is important to put that before loop where function names
+               ;; are replaced with #<ACODE immediate ...S>, see where
+               ;; is called x862-symbol-locative-p
+               (let* ((function-reference-numbers
+                (loop for constant in (reverse *x862-constant-alist*)
+                  for i from +function-immediate-constants-are-counted-from+
+                  when 
+                  (x862-named-function-reference-p constant)
+                  collect i)))
+               (x86-immediate-label (cons 'indices-of-function-references-in-constant-array function-reference-numbers)))
+
                (do* ((constants *x862-constant-alist* (cdr constants)))
                     ((null constants))
                  (let* ((imm (caar constants)))
@@ -3566,7 +3582,12 @@
            (memq imm *x862-fcells*))))
 
 
-
+; budden
+(defun x862-named-function-reference-p (imm)
+  ;(budden-tools:show-expr *x862-fcells*)
+  (and (consp imm)
+       (or (memq imm *x862-fcells*)
+           (memq (car imm) *x862-fcells*))))
 
 (defun x862-immediate-function-p (f)
   (setq f (acode-unwrapped-form-value f))

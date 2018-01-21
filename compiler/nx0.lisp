@@ -2475,7 +2475,7 @@ Or something. Right? ~s ~s" var varbits))
             (not (%cdr form)))
        (nx-error "Illegally quoted form ~S." f))))
 
-(defun nx-form-constant-p (form env)
+(defun nx-form-constant-p (form &optional env)
   (declare (ignore env))
   (or (quoted-form-p form)
       (self-evaluating-p form)))
